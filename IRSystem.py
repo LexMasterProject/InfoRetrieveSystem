@@ -9,11 +9,9 @@ OPTIONS:
 
 import sys, re, getopt,Collection,math,pickle
 
-
-
 class CommandLine:
     def __init__(self):
-        opts, args = getopt.getopt(sys.argv[1:],'q:s:c:i:h:S:L:r:')
+        opts, args = getopt.getopt(sys.argv[1:],'q:s:c:i:h:S:L:r:R:N:a:o:')
         opts = dict(opts)
         self.argfiles = args
         self.stops = set()
@@ -21,12 +19,15 @@ class CommandLine:
         self.collectionName=''
         self.indexfile=''
         self.loadfile=''
+        self.queryfile=''
         
         self.createIndex=False
         self.storeIndex=False
         self.loadIndex=False
         self.boolRetrieval=False
         self.rankedRetrieval=False
+        self.rankedRetrievalid=0
+        self.rankedRetrievalAll=False
 
         if '-h' in opts:
             self.printHelp()
@@ -54,7 +55,16 @@ class CommandLine:
             self.rankedRetrieval=True
             self.readQuery(opts['-r'])
             
-            
+        if '-R' in opts:
+            self.rankedRetrievalid=opts['-R'] 
+            collection=Collection.Collection(opts['-R'])
+            for doc in collection.docs():
+                if doc.docid==int(opts['-N']):
+                    self.query=doc.lines
+                    
+        if '-a' in opts:
+            self.rankedRetrievalAll=True
+            self.queryfile=opts["-a"]
 
     def printHelp(self):
         helpdoc = __doc__.replace('<PROGNAME>',sys.argv[0],1)
@@ -67,7 +77,8 @@ class CommandLine:
             self.stops.add(line.strip())
             
     def readQuery(self,query):
-        self.query=query.lower().split()
+        self.query.append(query)
+        
     
             
             
@@ -136,19 +147,21 @@ class IRSystem:
         for docid in self.docTermCount.iterkeys():
             similiarity=0
             for word,count in self.termCounts.iteritems():
-                idf=self.getInverseDocFre(word)
-                qi=count*idf
+                
                 if word in self.docTermCount[docid]:
+                    idf=self.getInverseDocFre(word)
+                    qi=count*idf
                     di=self.docTermCount[docid][word]*idf
                 else:
                     di=0
+                    qi=0
                 similiarity+=qi*di
             similiarity/=self.docSize[docid]
             self.docScores[docid]=similiarity
     
-    def listRank(self):
-        for l in self.docScores.iteritems():
-            print l
+    def listRank(self):            
+        ranks=sorted(self.docScores.iteritems(),key=lambda x:x[1],reverse=True)
+        return ranks
         
             
     
@@ -171,6 +184,7 @@ class IRSystem:
     #calc the dfw    
     def getDocFreq(self,word):
         return len(self.termDocCount[word])
+        
     #calc the idf
     def getInverseDocFre(self,word):
         return math.log10(self.totalDoc/self.getDocFreq(word))
@@ -214,8 +228,39 @@ if __name__ == '__main__':
         print '*'*20,'ranked retrieval','*'*20
         docsSystem.rankedRetrieval()
         docsSystem.cosQandDoc()
-        docsSystem.listRank()
+        ranks=docsSystem.listRank()
+        n=min(len(ranks),10)
+        for rank in ranks[:n]:
+            print rank[0],' ',rank[1]
         print '...Done'
+    if config.rankedRetrievalid:
+        print '*'*20,'ranked retrieval from queryset','*'*20
+        docsSystem.rankedRetrieval()
+        docsSystem.cosQandDoc()
+        ranks=docsSystem.listRank()
+        n=min(len(ranks),10)
+        for rank in ranks[:n]:
+            print rank[0],' ',rank[1]
+        print '...Done'
+    if config.rankedRetrievalAll:
+        print '*'*20,'ranked retrieval from queryfiles','*'*20
+        collection=Collection.Collection(config.queryfile)
+        with open("example.txt","w") as outfs:
+            for doc in collection.docs():
+                docsSystem.query=doc.lines
+                docsSystem.rankedRetrieval()
+                docsSystem.cosQandDoc()
+                ranks=docsSystem.listRank()
+                n=min(len(ranks),10)
+                for rank in ranks[:n]:
+                    print doc.docid," ",rank[0]
+                    form="%d %d\n"%(doc.docid,rank[0])
+                    outfs.write(form)
+            
+        
+        print '...Done'
+        
+        
         
     
         
