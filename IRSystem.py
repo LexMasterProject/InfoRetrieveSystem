@@ -11,7 +11,7 @@ import sys, re, getopt,Collection,math,pickle
 
 class CommandLine:
     def __init__(self):
-        opts, args = getopt.getopt(sys.argv[1:],'q:s:c:i:h:S:L:r:R:N:a:o:')
+        opts, args = getopt.getopt(sys.argv[1:],'q:s:c:i:h:S:L:r:Q:N:a:o:')
         opts = dict(opts)
         self.argfiles = args
         self.stops = set()
@@ -55,9 +55,9 @@ class CommandLine:
             self.rankedRetrieval=True
             self.readQuery(opts['-r'])
             
-        if '-R' in opts:
-            self.rankedRetrievalid=opts['-R'] 
-            collection=Collection.Collection(opts['-R'])
+        if '-Q' in opts:
+            self.rankedRetrievalid=opts['-Q'] 
+            collection=Collection.Collection(opts['-Q'])
             for doc in collection.docs():
                 if doc.docid==int(opts['-N']):
                     self.query=doc.lines
@@ -124,14 +124,18 @@ class IRSystem:
         collectionName=self.config.collectionName
         collection=Collection.Collection(collectionName)
         for doc in collection.docs():
+            #the collection |D|
             self.totalDoc+=1
             for line in doc.lines:
                 for token in self.tokenize(line):
                     if token not in self.stops:
                         self.addTermCount(token, 1)    
             for k,v in self.termCounts.iteritems():
+                #get the index
                 self.addTermDocCount(k, doc.docid, v)
+                #get docsize----|d|
                 self.getDocSize(doc.docid, self.termCounts)
+                #get doc term count---tf in doc
                 self.addDocTermCount(doc.docid, k, v)
             self.termCounts={}
     
@@ -188,6 +192,7 @@ class IRSystem:
     #calc the idf
     def getInverseDocFre(self,word):
         return math.log10(self.totalDoc/self.getDocFreq(word))
+       
     
     #calc the doc size
     def getDocSize(self,docid,termCounts):
@@ -201,7 +206,18 @@ class IRSystem:
     def loadIndex(self):
         with open(self.loadfile,'rb') as restoredata:
             self.termDocCount=pickle.load(restoredata)
-            
+            docidSet=set()
+            for word,docCount in self.termDocCount.iteritems():
+                for docid,termCount in docCount.iteritems():
+                    docidSet.add(docid)
+                    #get doc term count---tf in doc
+                    self.addDocTermCount(docid, word, termCount)
+            #the collection |D|  
+            self.totalDoc=len(docidSet) 
+            #get doc size----|d|
+            for docid,termCount in self.docTermCount.iteritems():
+                self.getDocSize(docid, termCount) 
+                 
              
 if __name__ == '__main__':
     config=CommandLine()
@@ -240,7 +256,7 @@ if __name__ == '__main__':
         ranks=docsSystem.listRank()
         n=min(len(ranks),10)
         for rank in ranks[:n]:
-            print rank[0],' ',rank[1]
+            print rank[0],"  ",rank[1]
         print '...Done'
     if config.rankedRetrievalAll:
         print '*'*20,'ranked retrieval from queryfiles','*'*20
@@ -253,11 +269,8 @@ if __name__ == '__main__':
                 ranks=docsSystem.listRank()
                 n=min(len(ranks),10)
                 for rank in ranks[:n]:
-                    print doc.docid," ",rank[0]
                     form="%d %d\n"%(doc.docid,rank[0])
                     outfs.write(form)
-            
-        
         print '...Done'
         
         
