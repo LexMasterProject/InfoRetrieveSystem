@@ -7,7 +7,7 @@ OPTIONS:
 ------------------------------------------------------------
 """
 
-import sys, re, getopt,Collection,math,pickle
+import sys, re, getopt,Collection,math,pickle,PorterStemmer
 
 class CommandLine:
     def __init__(self):
@@ -97,6 +97,7 @@ class IRSystem:
         self.indexfile=config.indexfile
         self.loadfile=config.loadfile
         self.docScores={}
+        self.porterStemmer=PorterStemmer.PorterStemmer()
        
     def addTermCount(self,term,v):
         if term in self.termCounts:
@@ -180,11 +181,16 @@ class IRSystem:
         
     #tokenize a line 
     #yield interator    
-    def tokenize(self,line):
-        mm=self.tokenRe.finditer(line.lower());
+    def tokenize(self,line,useStem=True):
+        mm=self.tokenRe.finditer(line.lower())
         if mm:
             for m in mm:
-                yield m.group()
+                word=m.group()
+                if useStem:
+                    yield self.porterStemmer.stem(word, 0, len(word)-1)
+                else:
+                    yield word
+                
     #calc the dfw    
     def getDocFreq(self,word):
         return len(self.termDocCount[word])
