@@ -209,6 +209,9 @@ class IRSystem:
         with open(self.indexfile,'wb') as savedata:
             pickle.dump(self.termDocCount,savedata)
             
+       
+            
+            
     def loadIndex(self):
         with open(self.loadfile,'rb') as restoredata:
             self.termDocCount=pickle.load(restoredata)
