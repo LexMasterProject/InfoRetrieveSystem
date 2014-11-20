@@ -230,39 +230,39 @@ class IRSystem:
              
 if __name__ == '__main__':
     config=CommandLine()
-    docsSystem=IRSystem(config)
+    irSystem=IRSystem(config)
     if config.createIndex:
         print '*'*20,'create index','*'*20
-        docsSystem.index()
+        irSystem.index()
         print '...Done'
     if config.storeIndex:
         print '*'*20,'store index','*'*20
-        docsSystem.storeIndex()
+        irSystem.storeIndex()
         print '...Done'
     if config.loadIndex:
         print '*'*20,'load index','*'*20
-        docsSystem.loadIndex()
+        irSystem.loadIndex()
         print '...Done'
     if config.boolRetrieval:
         print '*'*20,'boolean retrieval','*'*20
-        docsSystem.boolRetrieval()
-        for docid in docsSystem.boolRetrSet:
+        irSystem.boolRetrieval()
+        for docid in irSystem.boolRetrSet:
             print docid
         print '...Done'
     if config.rankedRetrieval:
         print '*'*20,'ranked retrieval','*'*20
-        docsSystem.rankedRetrieval()
-        docsSystem.cosQandDoc()
-        ranks=docsSystem.listRank()
+        irSystem.rankedRetrieval()
+        irSystem.cosQandDoc()
+        ranks=irSystem.listRank()
         n=min(len(ranks),10)
         for rank in ranks[:n]:
             print rank[0],' ',rank[1]
         print '...Done'
     if config.rankedRetrievalid:
         print '*'*20,'ranked retrieval from queryset','*'*20
-        docsSystem.rankedRetrieval()
-        docsSystem.cosQandDoc()
-        ranks=docsSystem.listRank()
+        irSystem.rankedRetrieval()
+        irSystem.cosQandDoc()
+        ranks=irSystem.listRank()
         n=min(len(ranks),10)
         for rank in ranks[:n]:
             print rank[0],"  ",rank[1]
@@ -272,10 +272,10 @@ if __name__ == '__main__':
         collection=Collection.Collection(config.queryfile)
         with open("example.txt","w") as outfs:
             for doc in collection.docs():
-                docsSystem.query=doc.lines
-                docsSystem.rankedRetrieval()
-                docsSystem.cosQandDoc()
-                ranks=docsSystem.listRank()
+                irSystem.query=doc.lines
+                irSystem.rankedRetrieval()
+                irSystem.cosQandDoc()
+                ranks=irSystem.listRank()
                 n=min(len(ranks),10)
                 for rank in ranks[:n]:
                     form="%d %d\n"%(doc.docid,rank[0])
